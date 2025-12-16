@@ -145,12 +145,24 @@ bool at_parser_line(const char *line, urc_t *out){
             return true;
         }
     }
-    
+
+    // +CMGR: "REC UNREAD","+84xxxx","",...
     if (n >= 6 && strncmp(line, "+CMGR:", 6) == 0) {
-        out->type = URC_CMGR;
-        return true;
+        const char *p = line + 6;
+        char status[16] = {0};
+        char phone[24]  = {0};
+        if (sscanf(p, " \"%15[^\"]\",\"%23[^\"]\"", status, phone) == 2) {
+            out->type = URC_CMGR;
+            strncpy(out->text, phone, sizeof(out->text) - 1);
+            out->text[sizeof(out->text) - 1] = '\0';
+            return true;
+        } else {
+            out->type = URC_CMGR;
+            return true; 
+        }
     }
 
+    // Dòng nội dung SMS (chỉ toàn ký tự in được, không bắt đầu bằng '+')
     {
         bool all_printable = true;
         for (size_t i = 0; i < n; i++) {
@@ -158,7 +170,7 @@ bool at_parser_line(const char *line, urc_t *out){
                 all_printable = false; break;
             }
         }
-        if (all_printable) {
+        if (all_printable && line[0] != '+') {
             out->type = URC_SMS_TEXT;
             snprintf(out->text, sizeof(out->text), "%.*s", (int)n, line);
             return true;

@@ -94,47 +94,47 @@ bool gsm_nw_basic(){
             return false;
         }
         break;
+    // case 2:
+    //     send_debug(">>> check sim ready \r\n");
+    //     send_at("AT+CPIN?\r\n");
+    //     gsm_nw_ctx.time_stamp = get_tick_ms();
+    //     gsm_nw_ctx.basic.step = 3;
+    //     break;
+    // case 3:
+    //     if(gsm_send_data_queue_pop(line, sizeof(line))){
+    //         log_raw_line(line);
+    //         if(at_parser_line(line,&urc)){
+    //             if(urc.type == URC_CPIN_READY){
+    //                 gsm_nw_ctx.basic.step = 4;
+    //                 return true;
+    //             }
+    //             else if (urc.type == URC_CPIN_PIN || urc.type == URC_CPIN_PUK){
+    //                 send_debug(">>> [sim error] no pin or no puk");
+    //                 gsm_nw_handle_error();
+    //                 return false;
+    //             }
+    //         }
+    //     }
+    //     if (is_timeout(gsm_nw_ctx.time_stamp,TIME_OUT)){
+    //         send_debug("time out CPIN\r\n");
+    //         gsm_nw_handle_error();
+    //         return false;
+    //     }
+    //     break;
     case 2:
-        send_debug(">>> check sim ready \r\n");
-        send_at("AT+CPIN?\r\n");
-        gsm_nw_ctx.time_stamp = get_tick_ms();
-        gsm_nw_ctx.basic.step = 3;
-        break;
-    case 3:
-        if(gsm_send_data_queue_pop(line, sizeof(line))){
-            log_raw_line(line);
-            if(at_parser_line(line,&urc)){
-                if(urc.type == URC_CPIN_READY){
-                    gsm_nw_ctx.basic.step = 4;
-                    return true;
-                }
-                else if (urc.type == URC_CPIN_PIN || urc.type == URC_CPIN_PUK){
-                    send_debug(">>> [sim error] no pin or no puk");
-                    gsm_nw_handle_error();
-                    return false;
-                }
-            }
-        }
-        if (is_timeout(gsm_nw_ctx.time_stamp,TIME_OUT)){
-            send_debug("time out CPIN\r\n");
-            gsm_nw_handle_error();
-            return false;
-        }
-        break;
-    case 4:
         send_debug(">>> check CREG \r\n");
         send_at("AT+CREG?\r\n");
         gsm_nw_ctx.time_stamp = get_tick_ms();
-        gsm_nw_ctx.basic.step = 5;
+        gsm_nw_ctx.basic.step = 3;
         break;
 
-    case 5:
+    case 3:
         if(gsm_send_data_queue_pop(line, sizeof(line))){
             log_raw_line(line);
             if(at_parser_line(line,&urc)){
                 if(urc.type == URC_CREG){
                     if (urc.v1 == 1 || urc.v1 == 5){
-                        gsm_nw_ctx.basic.step = 6;
+                        gsm_nw_ctx.basic.step = 4;
                         return true;    
                     }
                         else if (urc.v1 == 2 || urc.v1 == 3 || urc.v1 == 4) {
@@ -157,9 +157,37 @@ bool gsm_nw_basic(){
         }
         break;
 
-    case 6:
+    case 4:
         send_debug(">>> set SMS text mode\r\n");
         send_at("AT+CMGF=1\r\n");
+        gsm_nw_ctx.time_stamp = get_tick_ms();
+        gsm_nw_ctx.basic.step = 5;
+        break;
+
+    case 5:
+        if(gsm_send_data_queue_pop(line, sizeof(line))){
+            log_raw_line(line);
+            if(at_parser_line(line,&urc)){
+                if(urc.type == URC_OK){
+                    gsm_nw_ctx.basic.step = 6;
+                    return true;
+                }
+                else if(urc.type == URC_ERROR ){
+                    send_debug(">>> [sim error] error");
+                    gsm_nw_handle_error();
+                }
+            }
+        }
+        if (is_timeout(gsm_nw_ctx.time_stamp,TIME_OUT)){
+            send_debug("time out CMGF\r\n");
+            gsm_nw_handle_error();
+            return false;
+        }
+        break; 
+        
+    case 6:
+        send_debug(">>> set char set GSM 7-bit\r\n");
+        send_at("AT+CSCS=\"GSM\"\r\n");
         gsm_nw_ctx.time_stamp = get_tick_ms();
         gsm_nw_ctx.basic.step = 7;
         break;
@@ -179,15 +207,15 @@ bool gsm_nw_basic(){
             }
         }
         if (is_timeout(gsm_nw_ctx.time_stamp,TIME_OUT)){
-            send_debug("time out CMGF\r\n");
+           send_debug("time out CSCS\r\n");
             gsm_nw_handle_error();
             return false;
         }
-        break; 
+        break;
         
     case 8:
-        send_debug(">>> set char set GSM 7-bit\r\n");
-        send_at("AT+CSCS=\"GSM\"\r\n");
+        send_debug(">>> set storage SIM\r\n");
+        send_at("AT+CPMS=\"ME\",\"ME\",\"ME\"\r\n");
         gsm_nw_ctx.time_stamp = get_tick_ms();
         gsm_nw_ctx.basic.step = 9;
         break;
@@ -207,48 +235,20 @@ bool gsm_nw_basic(){
             }
         }
         if (is_timeout(gsm_nw_ctx.time_stamp,TIME_OUT)){
-           send_debug("time out CSCS\r\n");
-            gsm_nw_handle_error();
-            return false;
-        }
-        break;
-        
-    case 10:
-        send_debug(">>> set storage SIM\r\n");
-        send_at("AT+CPMS=\"ME\",\"ME\",\"ME\"\r\n");
-        gsm_nw_ctx.time_stamp = get_tick_ms();
-        gsm_nw_ctx.basic.step = 11;
-        break;
-
-    case 11:
-        if(gsm_send_data_queue_pop(line, sizeof(line))){
-            log_raw_line(line);
-            if(at_parser_line(line,&urc)){
-                if(urc.type == URC_OK){
-                    gsm_nw_ctx.basic.step = 12;
-                    return true;
-                }
-                else if(urc.type == URC_ERROR ){
-                    send_debug(">>> [sim error] error");
-                    gsm_nw_handle_error();
-                }
-            }
-        }
-        if (is_timeout(gsm_nw_ctx.time_stamp,TIME_OUT)){
             send_debug("time out AT+CPMS\r\n");
             gsm_nw_handle_error();
             return false;
         }
         break;
 
-    case 12:
+    case 10:
         send_debug(">>> check cimi for save when set apn\r\n");
         send_at("AT+CIMI\r\n");
         gsm_nw_ctx.time_stamp = get_tick_ms();
-        gsm_nw_ctx.basic.step = 13;
+        gsm_nw_ctx.basic.step = 11;
         break;
         
-    case 13:
+    case 11:
         if (gsm_send_data_queue_pop(line, sizeof(line))) {
             log_raw_line(line);
             if (at_parser_line(line, &urc)) {
@@ -261,7 +261,7 @@ bool gsm_nw_basic(){
                     strncpy(gsm_nw_ctx.lte.apn, apn, sizeof(gsm_nw_ctx.lte.apn) - 1);
                     gsm_nw_ctx.lte.apn[sizeof(gsm_nw_ctx.lte.apn) - 1] = '\0';
 
-                    gsm_nw_ctx.basic.step = 14;
+                    gsm_nw_ctx.basic.step = 12;
                     return true;
                 } else if (urc.type == URC_ERROR) {
                     send_debug(">>> [sim error] error");
@@ -277,14 +277,14 @@ bool gsm_nw_basic(){
         }
         break;
 
-    case 14:
+    case 12:
         send_debug(">>> turn on return error\r\n");
         send_at("AT+CMEE=1\r\n");
         gsm_nw_ctx.time_stamp = get_tick_ms();
-        gsm_nw_ctx.basic.step = 15;
+        gsm_nw_ctx.basic.step = 13;
         break;
 
-    case 15:
+    case 13:
         if (gsm_send_data_queue_pop(line, sizeof(line))) {
             log_raw_line(line);
             if (at_parser_line(line, &urc)) {

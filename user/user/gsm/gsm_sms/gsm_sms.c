@@ -3,6 +3,7 @@
 #include "gsm/gsm_send_data_queue.h"
 #include "../urc/urc.h"
 #include "driver/W25Qx/w25qx.h"
+#include "driver/led/led.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -165,18 +166,18 @@ bool gsm_sms_phase_send(void){
             break;
         }
 
-        case 1: { 
-                // Sau ~200 ms kể từ AT+CMGS, gửi nội dung + Ctrl+Z để tránh mất prompt '>'
+        case 1: {
                 if (is_timeout(gsm_sms_ctx.time_stamp, 200)){
-                    uart_send_string(SIM_UART,(uint8_t*)gsm_sms_ctx.send.text,(uint16_t)strlen(gsm_sms_ctx.send.text));
-                    delay_ms(20); // cho modem kịp nhận text
+                    uart_send_string(SIM_UART, gsm_sms_ctx.send.text,
+                                     (uint16_t)strlen(gsm_sms_ctx.send.text));
+                    delay_ms(20); 
                     uart_send_byte(SIM_UART,0x1A); 
                     gsm_sms_ctx.send.step  = 2;
                     gsm_sms_ctx.time_stamp = get_tick_ms();
                     return true;
                 }
 
-                // Nếu modem trả lỗi sớm
+                
                 if (gsm_send_data_queue_pop(line, sizeof(line))) {
                     log_raw_line(line);
                     if (at_parser_line(line, &sms_urc)) {
@@ -263,22 +264,45 @@ bool gsm_sms_reciv (void){
             log_raw_line(line);
             if (at_parser_line(line, &sms_urc)) {
                 
-                if (sms_urc.type == URC_ERROR || sms_urc.type == URC_CMS_ERROR) {
+                if (sms_urc.type == URC_CMGR) {
+                    strncpy(gsm_sms_ctx.receive.phone, sms_urc.text,
+                            sizeof(gsm_sms_ctx.receive.phone) - 1);
+                    gsm_sms_ctx.receive.phone[sizeof(gsm_sms_ctx.receive.phone) - 1] = '\0';
+                }
+                
+                else if (sms_urc.type == URC_SMS_TEXT) {
+                    strncpy(gsm_sms_ctx.receive.text, sms_urc.text,
+                            sizeof(gsm_sms_ctx.receive.text) - 1);
+                    gsm_sms_ctx.receive.text[sizeof(gsm_sms_ctx.receive.text) - 1] = '\0';
+
+                
+                    if (strcmp(gsm_sms_ctx.receive.phone, gsm_sms_ctx.target_phone) == 0) {
+                        if (strcmp(gsm_sms_ctx.receive.text, "0") == 0) {
+                            led_set_state(0);
+                            led_state_save(0);
+                            gsm_sms_send(NULL, "LED OFF\r\n");
+                        } else if (strcmp(gsm_sms_ctx.receive.text, "1") == 0) {
+                            led_set_state(1);
+                            led_state_save(1);
+                            gsm_sms_send(NULL, "LED ON\r\n");
+                        } else {
+                            gsm_sms_send(NULL, "CMD ERR\r\n");
+                        }
+                    } else {
+                        send_debug(">>> [SMS] ignore non-target sender\r\n");
+                    }
+
+                    gsm_sms_ctx.receive.step = 4;
+                    gsm_sms_ctx.time_stamp   = get_tick_ms();
+                    return true;
+                }
+                else if (sms_urc.type == URC_ERROR || sms_urc.type == URC_CMS_ERROR) {
                     gsm_sms_handle_error();
                     return false;
                 }
-            } else {
-
-                strncpy(gsm_sms_ctx.receive.text, line,
-                        sizeof(gsm_sms_ctx.receive.text) - 1);
-                gsm_sms_ctx.receive.text[sizeof(gsm_sms_ctx.receive.text) - 1] = '\0';
-
-                gsm_sms_ctx.receive.step = 4;
-                gsm_sms_ctx.time_stamp   = get_tick_ms();
-                return true;
             }
         }
-        if (is_timeout(gsm_sms_ctx.time_stamp, TIME_OUT)) {
+        if (is_timeout(gsm_sms_ctx.time_stamp, 1000)) {
         	send_debug("time out get message\r\n");
             gsm_sms_handle_error();
             return false;
@@ -303,6 +327,7 @@ bool gsm_sms_reciv (void){
                     gsm_sms_ctx.state = GSM_SMS_IDLE; 
                     gsm_sms_ctx.receive.step = 0;
                     return true;
+                    
                 } else if (sms_urc.type == URC_ERROR || sms_urc.type == URC_CMS_ERROR) {
                     gsm_sms_ctx.receive.step = 0;
                     gsm_sms_ctx.state = GSM_SMS_IDLE;
@@ -310,7 +335,7 @@ bool gsm_sms_reciv (void){
                 }
             }
         }
-        if (is_timeout(gsm_sms_ctx.time_stamp, TIME_OUT)) {
+        if (is_timeout(gsm_sms_ctx.time_stamp, 1000)) {
         	send_debug("time out delete message\r\n");
             gsm_sms_ctx.receive.step = 0;
             gsm_sms_ctx.state = GSM_SMS_IDLE;

@@ -22,8 +22,10 @@ void init_hardware(void){
     uart_init();
     w25qxx_init();
     gsm_nw_init();
+    led_init();
+    led_state_init();      
     gsm_sms_init();
-    gsm_sms_set_target("0837645067");
+   gsm_sms_set_target("+84386126985");
 }
 
 void app_reset_all(void){
@@ -45,6 +47,52 @@ void app_init(void){
 }
 
 static void app_idle_polling(void) {
+    char line[30];
+    urc_t urc;
+    
+    if (!app_ctx.cpin_pending && is_timeout(app_ctx.cpin_last, 10000)) {
+        send_debug(">>> [SIM] CPIN poll\r\n");
+        send_at("AT+CPIN?\r\n");
+        app_ctx.cpin_pending = true;
+        app_ctx.cpin_start   = get_tick_ms();
+        app_ctx.cpin_last    = get_tick_ms();
+    }
+
+
+    if (app_ctx.cpin_pending) {
+        if (gsm_send_data_queue_pop(line, sizeof(line))) {
+            log_raw_line(line);
+            if (at_parser_line(line, &urc)) {
+            	if (urc.type == URC_CPIN_READY) {
+            	        
+            	        app_ctx.sim_ok = true;
+            	        app_ctx.cpin_pending = false;
+            	    }
+            	    else if (urc.type == URC_OK) {
+            	        
+            	        app_ctx.sim_ok = true;
+            	        app_ctx.cpin_pending = false;
+            	    }else if (urc.type == URC_CPIN_PIN ||
+                           urc.type == URC_CPIN_PUK ||
+                           urc.type == URC_ERROR) {
+                    send_debug(">>> [SIM] CPIN NOT READY\r\n");
+                    app_ctx.sim_ok = false;
+                    app_ctx.cpin_pending   = false;
+                    app_ctx.state  = APP_WAIT_NET;
+                    app_reset_all();
+                }
+            }
+        }
+
+        // Timeout chờ trả lời CPIN (3s)
+        if (is_timeout(app_ctx.cpin_start, 3000)) {
+            send_debug(">>> [SIM] CPIN timeout\r\n");
+            app_ctx.cpin_pending   = false;
+            app_ctx.sim_ok = false;
+            app_ctx.state  = APP_WAIT_NET;
+            app_reset_all();
+        }
+    }
 
     if (gsm_sms_ctx.state != GSM_SMS_SEND) {
         gsm_sms_reciv();
@@ -69,10 +117,10 @@ void app_process(void){
     case APP_IDLE:
         app_idle_polling();
        
-        if (!test_sms_sent && gsm_sms_ctx.state == GSM_SMS_IDLE && gsm_sms_ctx.target_valid) {
-            gsm_sms_send("0837645067", "test\r\n");
-            test_sms_sent = true;
-        }
+//        if (!test_sms_sent && gsm_sms_ctx.state == GSM_SMS_IDLE && gsm_sms_ctx.target_valid) {
+//            gsm_sms_send("0386126985", "test\r\n");
+//            test_sms_sent = true;
+//        }
         gsm_sms_process();
         break;
     default:

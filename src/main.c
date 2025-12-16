@@ -17,6 +17,6 @@ int main (void){
     gsm_send_data_queue_proces();
     app_process();
 
-    delay_ms(50);
+    delay_ms(300);
   }
 }
