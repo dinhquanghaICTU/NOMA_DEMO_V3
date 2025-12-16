@@ -1,0 +1,43 @@
+{
+  "configurations": [
+    {
+      "name": "Win32-STM32",
+      "compilerPath": "arm-none-eabi-gcc",
+      "intelliSenseMode": "gcc-x86",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "defines": [
+        "STM32F10X_MD",
+        "USE_STDPERIPH_DRIVER"
+      ],
+      "includePath": [
+        "${workspaceFolder}",
+        "${workspaceFolder}/user",
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/user/user",
+        "${workspaceFolder}/user/user/gsm",
+        "${workspaceFolder}/user/user/driver",
+        "${workspaceFolder}/user/user/driver/uart",
+        "${workspaceFolder}/user/third_paty",
+        "${workspaceFolder}/user/third_paty/ringbuff",
+        "${workspaceFolder}/Libraries/STM32F10x_StdPeriph_Driver/inc",
+        "${workspaceFolder}/Libraries/CMSIS/Device/ST/STM32F10x/Include",
+        "${workspaceFolder}/Libraries/CMSIS/Include"
+      ],
+      "browse": {
+        "path": [
+          "${workspaceFolder}",
+          "${workspaceFolder}/src",
+          "${workspaceFolder}/user",
+          "${workspaceFolder}/user/user",
+          "${workspaceFolder}/user/user/gsm",
+          "${workspaceFolder}/Libraries/STM32F10x_StdPeriph_Driver/inc",
+          "${workspaceFolder}/Libraries/CMSIS/Device/ST/STM32F10x/Include",
+          "${workspaceFolder}/Libraries/CMSIS/Include"
+        ]
+      }
+    }
+  ],
+  "version": 4
+}
+

@@ -1,0 +1,8 @@
+w25qx.c:5:13:w25qxx_send_cmd	16	static
+w25qx.c:11:6:w25qxx_init	8	static
+w25qx.c:17:10:w25qxx_read_id	16	static
+w25qx.c:28:6:w25qxx_write_enable	8	static
+w25qx.c:32:6:w25qxx_wait_busy	16	static
+w25qx.c:42:6:w25qxx_erase_sector	16	static
+w25qx.c:53:6:w25qxx_write_page	32	static
+w25qx.c:70:6:w25qxx_read	40	static

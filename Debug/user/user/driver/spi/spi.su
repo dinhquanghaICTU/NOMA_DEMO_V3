@@ -1,0 +1,2 @@
+spi.c:3:6:spi_init	32	static
+spi.c:50:9:spi_transfer	16	static

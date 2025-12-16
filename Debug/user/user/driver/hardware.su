@@ -1,0 +1,7 @@
+core_cm3.h:1014:22:NVIC_SetPriority	16	static
+core_cm3.h:1139:26:SysTick_Config	16	static
+hardware.c:13:10:get_tick_ms	4	static
+hardware.c:17:6:tick_ms_increment	4	static
+hardware.c:21:6:delay_ms	24	static
+hardware.c:26:6:rcc_config	16	static
+hardware.c:47:6:systick_config	8	static

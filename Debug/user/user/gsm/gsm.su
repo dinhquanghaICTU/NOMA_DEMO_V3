@@ -1,0 +1,4 @@
+gsm.c:3:6:send_at	16	static
+gsm.c:7:6:send_debug	16	static
+gsm.c:11:6:is_timeout	16	static
+gsm.c:15:6:log_raw_line	16	static
