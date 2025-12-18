@@ -214,8 +214,8 @@ bool gsm_nw_basic(){
         break;
         
     case 8:
-        send_debug(">>> set storage SIM\r\n");
-        send_at("AT+CPMS=\"ME\",\"ME\",\"ME\"\r\n");
+        send_debug(">>> set storage SIM (SM)\r\n");
+        send_at("AT+CPMS=\"SM\",\"SM\",\"SM\"\r\n");
         gsm_nw_ctx.time_stamp = get_tick_ms();
         gsm_nw_ctx.basic.step = 9;
         break;

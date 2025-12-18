@@ -25,7 +25,7 @@ void init_hardware(void){
     led_init();
     led_state_init();      
     gsm_sms_init();
-   gsm_sms_set_target("+84386126985");
+   gsm_sms_set_target("+84396674953");
 }
 
 void app_reset_all(void){

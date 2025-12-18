@@ -7,19 +7,19 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
   1 .text         00009e28  08000110  08000110  00010110  2**3
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .rodata       00000b6c  08009f38  08009f38  00019f38  2**3
+  2 .rodata       00000b74  08009f38  08009f38  00019f38  2**3
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  3 .ARM          00000008  0800aaa4  0800aaa4  0001aaa4  2**2
+  3 .ARM          00000008  0800aaac  0800aaac  0001aaac  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  4 .init_array   00000004  0800aaac  0800aaac  0001aaac  2**2
+  4 .init_array   00000004  0800aab4  0800aab4  0001aab4  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  5 .fini_array   00000004  0800aab0  0800aab0  0001aab0  2**2
+  5 .fini_array   00000004  0800aab8  0800aab8  0001aab8  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  6 .data         00000698  20000000  0800aab4  00020000  2**2
+  6 .data         00000698  20000000  0800aabc  00020000  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  7 .bss          00000fc0  20000698  0800b14c  00020698  2**2
+  7 .bss          00000fc0  20000698  0800b154  00020698  2**2
                   ALLOC
-  8 ._user_heap_stack 00000100  20001658  0800b14c  00021658  2**0
+  8 ._user_heap_stack 00000100  20001658  0800b154  00021658  2**0
                   ALLOC
   9 .ARM.attributes 00000029  00000000  00000000  00020698  2**0
                   CONTENTS, READONLY
@@ -3591,7 +3591,7 @@ LoopFillZerobss:
   ldr   sp, =_estack    /* Atollic update: set stack pointer */
  8001a1c:	20005000 	.word	0x20005000
 	ldr	r3, =_sidata
- 8001a20:	0800aab4 	.word	0x0800aab4
+ 8001a20:	0800aabc 	.word	0x0800aabc
 	ldr	r0, =_sdata
  8001a24:	20000000 	.word	0x20000000
 	ldr	r3, =_edata
@@ -6573,7 +6573,7 @@ void init_hardware(void){
  8002b74:	f7ff fd60 	bl	8002638 <led_state_init>
     gsm_sms_init();
  8002b78:	f000 ff60 	bl	8003a3c <gsm_sms_init>
-   gsm_sms_set_target("+84386126985");
+   gsm_sms_set_target("+84396674953");
  8002b7c:	4802      	ldr	r0, [pc, #8]	; (8002b88 <init_hardware+0x30>)
  8002b7e:	f001 fb33 	bl	80041e8 <gsm_sms_set_target>
 }
@@ -7093,7 +7093,7 @@ const char* apn_from_mcc_mnc(int mcc, int mnc) {
  8002eb6:	bc80      	pop	{r7}
  8002eb8:	4770      	bx	lr
  8002eba:	bf00      	nop
- 8002ebc:	0800a6fc 	.word	0x0800a6fc
+ 8002ebc:	0800a700 	.word	0x0800a700
  8002ec0:	08009fbc 	.word	0x08009fbc
 
 08002ec4 <gsm_nw_basic>:
@@ -7507,10 +7507,10 @@ bool gsm_nw_basic(){
         break;
         
     case 8:
-        send_debug(">>> set storage SIM\r\n");
+        send_debug(">>> set storage SIM (SM)\r\n");
  8003184:	4817      	ldr	r0, [pc, #92]	; (80031e4 <gsm_nw_basic+0x320>)
  8003186:	f7ff fcaf 	bl	8002ae8 <send_debug>
-        send_at("AT+CPMS=\"ME\",\"ME\",\"ME\"\r\n");
+        send_at("AT+CPMS=\"SM\",\"SM\",\"SM\"\r\n");
  800318a:	4817      	ldr	r0, [pc, #92]	; (80031e8 <gsm_nw_basic+0x324>)
  800318c:	f7ff fc98 	bl	8002ac0 <send_at>
         gsm_nw_ctx.time_stamp = get_tick_ms();
@@ -7542,7 +7542,7 @@ bool gsm_nw_basic(){
  80031dc:	0800a124 	.word	0x0800a124
  80031e0:	0800a134 	.word	0x0800a134
  80031e4:	0800a144 	.word	0x0800a144
- 80031e8:	0800a15c 	.word	0x0800a15c
+ 80031e8:	0800a160 	.word	0x0800a160
 
     case 9:
         if(gsm_send_data_queue_pop(line, sizeof(line))){
@@ -7877,14 +7877,14 @@ bool gsm_nw_basic(){
  80033fc:	20001414 	.word	0x20001414
  8003400:	20001464 	.word	0x20001464
  8003404:	0800a0a8 	.word	0x0800a0a8
- 8003408:	0800a178 	.word	0x0800a178
- 800340c:	0800a18c 	.word	0x0800a18c
- 8003410:	0800a1b4 	.word	0x0800a1b4
+ 8003408:	0800a17c 	.word	0x0800a17c
+ 800340c:	0800a190 	.word	0x0800a190
+ 8003410:	0800a1b8 	.word	0x0800a1b8
  8003414:	20001490 	.word	0x20001490
- 8003418:	0800a1c0 	.word	0x0800a1c0
- 800341c:	0800a1d0 	.word	0x0800a1d0
- 8003420:	0800a1ec 	.word	0x0800a1ec
- 8003424:	0800a1f8 	.word	0x0800a1f8
+ 8003418:	0800a1c4 	.word	0x0800a1c4
+ 800341c:	0800a1d4 	.word	0x0800a1d4
+ 8003420:	0800a1f0 	.word	0x0800a1f0
+ 8003424:	0800a1fc 	.word	0x0800a1fc
 
 08003428 <gsm_nw_lte>:
 
@@ -8242,23 +8242,23 @@ bool gsm_nw_lte(void){
  800367c:	46bd      	mov	sp, r7
  800367e:	bd80      	pop	{r7, pc}
  8003680:	20001464 	.word	0x20001464
- 8003684:	0800a208 	.word	0x0800a208
- 8003688:	0800a21c 	.word	0x0800a21c
+ 8003684:	0800a20c 	.word	0x0800a20c
+ 8003688:	0800a220 	.word	0x0800a220
  800368c:	20001414 	.word	0x20001414
  8003690:	0800a0a8 	.word	0x0800a0a8
- 8003694:	0800a22c 	.word	0x0800a22c
+ 8003694:	0800a230 	.word	0x0800a230
  8003698:	20001490 	.word	0x20001490
  800369c:	08009fbc 	.word	0x08009fbc
- 80036a0:	0800a23c 	.word	0x0800a23c
- 80036a4:	0800a258 	.word	0x0800a258
- 80036a8:	0800a268 	.word	0x0800a268
- 80036ac:	0800a278 	.word	0x0800a278
- 80036b0:	0800a288 	.word	0x0800a288
+ 80036a0:	0800a240 	.word	0x0800a240
+ 80036a4:	0800a25c 	.word	0x0800a25c
+ 80036a8:	0800a26c 	.word	0x0800a26c
+ 80036ac:	0800a27c 	.word	0x0800a27c
+ 80036b0:	0800a28c 	.word	0x0800a28c
  80036b4:	20001424 	.word	0x20001424
- 80036b8:	0800a294 	.word	0x0800a294
- 80036bc:	0800a298 	.word	0x0800a298
- 80036c0:	0800a2c0 	.word	0x0800a2c0
- 80036c4:	0800a2ec 	.word	0x0800a2ec
+ 80036b8:	0800a298 	.word	0x0800a298
+ 80036bc:	0800a29c 	.word	0x0800a29c
+ 80036c0:	0800a2c4 	.word	0x0800a2c4
+ 80036c4:	0800a2f0 	.word	0x0800a2f0
 
 080036c8 <gsm_nw_reset_sim>:
 
@@ -8405,12 +8405,12 @@ bool gsm_nw_reset_sim(void) {
  80037a0:	46bd      	mov	sp, r7
  80037a2:	bd80      	pop	{r7, pc}
  80037a4:	20001464 	.word	0x20001464
- 80037a8:	0800a300 	.word	0x0800a300
- 80037ac:	0800a320 	.word	0x0800a320
+ 80037a8:	0800a304 	.word	0x0800a304
+ 80037ac:	0800a324 	.word	0x0800a324
  80037b0:	20001414 	.word	0x20001414
- 80037b4:	0800a330 	.word	0x0800a330
- 80037b8:	0800a354 	.word	0x0800a354
- 80037bc:	0800a36c 	.word	0x0800a36c
+ 80037b4:	0800a334 	.word	0x0800a334
+ 80037b8:	0800a358 	.word	0x0800a358
+ 80037bc:	0800a370 	.word	0x0800a370
 
 080037c0 <gsm_nw_process>:
 
@@ -8955,10 +8955,10 @@ void gsm_sms_init(void){
  8003b1a:	bd80      	pop	{r7, pc}
  8003b1c:	200014b0 	.word	0x200014b0
  8003b20:	200014bd 	.word	0x200014bd
- 8003b24:	0800a384 	.word	0x0800a384
- 8003b28:	0800a3a8 	.word	0x0800a3a8
- 8003b2c:	0800a3ac 	.word	0x0800a3ac
- 8003b30:	0800a3dc 	.word	0x0800a3dc
+ 8003b24:	0800a388 	.word	0x0800a388
+ 8003b28:	0800a3ac 	.word	0x0800a3ac
+ 8003b2c:	0800a3b0 	.word	0x0800a3b0
+ 8003b30:	0800a3e0 	.word	0x0800a3e0
 
 08003b34 <gsm_sms_reset_flow>:
 
@@ -9059,10 +9059,10 @@ static void gsm_sms_handle_error(void)
  8003bc8:	46bd      	mov	sp, r7
  8003bca:	bd80      	pop	{r7, pc}
  8003bcc:	200014b0 	.word	0x200014b0
- 8003bd0:	0800a3fc 	.word	0x0800a3fc
- 8003bd4:	0800a410 	.word	0x0800a410
- 8003bd8:	0800a414 	.word	0x0800a414
- 8003bdc:	0800a41c 	.word	0x0800a41c
+ 8003bd0:	0800a400 	.word	0x0800a400
+ 8003bd4:	0800a414 	.word	0x0800a414
+ 8003bd8:	0800a418 	.word	0x0800a418
+ 8003bdc:	0800a420 	.word	0x0800a420
 
 08003be0 <gsm_sms_send>:
 
@@ -9187,11 +9187,11 @@ bool gsm_sms_send(const char *phone, const char *text){
  8003c94:	46bd      	mov	sp, r7
  8003c96:	bd80      	pop	{r7, pc}
  8003c98:	200014b0 	.word	0x200014b0
- 8003c9c:	0800a440 	.word	0x0800a440
- 8003ca0:	0800a454 	.word	0x0800a454
+ 8003c9c:	0800a444 	.word	0x0800a444
+ 8003ca0:	0800a458 	.word	0x0800a458
  8003ca4:	200014bd 	.word	0x200014bd
- 8003ca8:	0800a470 	.word	0x0800a470
- 8003cac:	0800a498 	.word	0x0800a498
+ 8003ca8:	0800a474 	.word	0x0800a474
+ 8003cac:	0800a49c 	.word	0x0800a49c
  8003cb0:	200014d9 	.word	0x200014d9
  8003cb4:	200014e9 	.word	0x200014e9
 
@@ -9428,13 +9428,13 @@ bool gsm_sms_phase_send(void){
  8003e52:	bf00      	nop
  8003e54:	200014b0 	.word	0x200014b0
  8003e58:	200014d9 	.word	0x200014d9
- 8003e5c:	0800a4b0 	.word	0x0800a4b0
+ 8003e5c:	0800a4b4 	.word	0x0800a4b4
  8003e60:	200014e9 	.word	0x200014e9
  8003e64:	40013800 	.word	0x40013800
  8003e68:	20000e88 	.word	0x20000e88
- 8003e6c:	0800a4c0 	.word	0x0800a4c0
- 8003e70:	0800a4e0 	.word	0x0800a4e0
- 8003e74:	0800a4f4 	.word	0x0800a4f4
+ 8003e6c:	0800a4c4 	.word	0x0800a4c4
+ 8003e70:	0800a4e4 	.word	0x0800a4e4
+ 8003e74:	0800a4f8 	.word	0x0800a4f8
 
 08003e78 <gsm_sms_reciv>:
 
@@ -9847,24 +9847,24 @@ bool gsm_sms_reciv (void){
  8004148:	bd80      	pop	{r7, pc}
  800414a:	bf00      	nop
  800414c:	200014b0 	.word	0x200014b0
- 8004150:	0800a514 	.word	0x0800a514
- 8004154:	0800a52c 	.word	0x0800a52c
+ 8004150:	0800a518 	.word	0x0800a518
+ 8004154:	0800a530 	.word	0x0800a530
  8004158:	20000e88 	.word	0x20000e88
- 800415c:	0800a540 	.word	0x0800a540
+ 800415c:	0800a544 	.word	0x0800a544
  8004160:	20000e98 	.word	0x20000e98
  8004164:	20001595 	.word	0x20001595
  8004168:	200015a5 	.word	0x200015a5
  800416c:	200014bd 	.word	0x200014bd
- 8004170:	0800a550 	.word	0x0800a550
- 8004174:	0800a554 	.word	0x0800a554
- 8004178:	0800a560 	.word	0x0800a560
- 800417c:	0800a564 	.word	0x0800a564
- 8004180:	0800a570 	.word	0x0800a570
- 8004184:	0800a57c 	.word	0x0800a57c
- 8004188:	0800a5a4 	.word	0x0800a5a4
- 800418c:	0800a5bc 	.word	0x0800a5bc
- 8004190:	0800a5cc 	.word	0x0800a5cc
- 8004194:	0800a5e4 	.word	0x0800a5e4
+ 8004170:	0800a554 	.word	0x0800a554
+ 8004174:	0800a558 	.word	0x0800a558
+ 8004178:	0800a564 	.word	0x0800a564
+ 800417c:	0800a568 	.word	0x0800a568
+ 8004180:	0800a574 	.word	0x0800a574
+ 8004184:	0800a580 	.word	0x0800a580
+ 8004188:	0800a5a8 	.word	0x0800a5a8
+ 800418c:	0800a5c0 	.word	0x0800a5c0
+ 8004190:	0800a5d0 	.word	0x0800a5d0
+ 8004194:	0800a5e8 	.word	0x0800a5e8
 
 08004198 <gsm_sms_process>:
 
@@ -10048,11 +10048,11 @@ bool gsm_sms_set_target(const char *phone){
  80042ae:	46bd      	mov	sp, r7
  80042b0:	bd80      	pop	{r7, pc}
  80042b2:	bf00      	nop
- 80042b4:	0800a600 	.word	0x0800a600
- 80042b8:	0800a3a8 	.word	0x0800a3a8
+ 80042b4:	0800a604 	.word	0x0800a604
+ 80042b8:	0800a3ac 	.word	0x0800a3ac
  80042bc:	200014bd 	.word	0x200014bd
  80042c0:	200014b0 	.word	0x200014b0
- 80042c4:	0800a624 	.word	0x0800a624
+ 80042c4:	0800a628 	.word	0x0800a628
 
 080042c8 <at_parser_line>:
 #include "urc.h"
@@ -10524,17 +10524,17 @@ bool at_parser_line(const char *line, urc_t *out){
  800460a:	2301      	movs	r3, #1
  800460c:	e115      	b.n	800483a <at_parser_line+0x572>
  800460e:	bf00      	nop
- 8004610:	0800a648 	.word	0x0800a648
- 8004614:	0800a64c 	.word	0x0800a64c
- 8004618:	0800a654 	.word	0x0800a654
- 800461c:	0800a65c 	.word	0x0800a65c
- 8004620:	0800a664 	.word	0x0800a664
- 8004624:	0800a66c 	.word	0x0800a66c
- 8004628:	0800a674 	.word	0x0800a674
- 800462c:	0800a67c 	.word	0x0800a67c
- 8004630:	0800a684 	.word	0x0800a684
- 8004634:	0800a690 	.word	0x0800a690
- 8004638:	0800a6a0 	.word	0x0800a6a0
+ 8004610:	0800a64c 	.word	0x0800a64c
+ 8004614:	0800a650 	.word	0x0800a650
+ 8004618:	0800a658 	.word	0x0800a658
+ 800461c:	0800a660 	.word	0x0800a660
+ 8004620:	0800a668 	.word	0x0800a668
+ 8004624:	0800a670 	.word	0x0800a670
+ 8004628:	0800a678 	.word	0x0800a678
+ 800462c:	0800a680 	.word	0x0800a680
+ 8004630:	0800a688 	.word	0x0800a688
+ 8004634:	0800a694 	.word	0x0800a694
+ 8004638:	0800a6a4 	.word	0x0800a6a4
     }
 
     // +CMGS: <ref>
@@ -10824,14 +10824,14 @@ bool at_parser_line(const char *line, urc_t *out){
  800483e:	46bd      	mov	sp, r7
  8004840:	bd80      	pop	{r7, pc}
  8004842:	bf00      	nop
- 8004844:	0800a6a4 	.word	0x0800a6a4
- 8004848:	0800a6ac 	.word	0x0800a6ac
- 800484c:	0800a6b0 	.word	0x0800a6b0
- 8004850:	0800a6bc 	.word	0x0800a6bc
- 8004854:	0800a6c4 	.word	0x0800a6c4
- 8004858:	0800a6d4 	.word	0x0800a6d4
- 800485c:	0800a6dc 	.word	0x0800a6dc
- 8004860:	0800a6f4 	.word	0x0800a6f4
+ 8004844:	0800a6a8 	.word	0x0800a6a8
+ 8004848:	0800a6b0 	.word	0x0800a6b0
+ 800484c:	0800a6b4 	.word	0x0800a6b4
+ 8004850:	0800a6c0 	.word	0x0800a6c0
+ 8004854:	0800a6c8 	.word	0x0800a6c8
+ 8004858:	0800a6d8 	.word	0x0800a6d8
+ 800485c:	0800a6e0 	.word	0x0800a6e0
+ 8004860:	0800a6f8 	.word	0x0800a6f8
 
 08004864 <__libc_init_array>:
  8004864:	b570      	push	{r4, r5, r6, lr}
@@ -10859,10 +10859,10 @@ bool at_parser_line(const char *line, urc_t *out){
  8004896:	4798      	blx	r3
  8004898:	3501      	adds	r5, #1
  800489a:	e7f2      	b.n	8004882 <__libc_init_array+0x1e>
- 800489c:	0800aaac 	.word	0x0800aaac
- 80048a0:	0800aaac 	.word	0x0800aaac
- 80048a4:	0800aaac 	.word	0x0800aaac
- 80048a8:	0800aab0 	.word	0x0800aab0
+ 800489c:	0800aab4 	.word	0x0800aab4
+ 80048a0:	0800aab4 	.word	0x0800aab4
+ 80048a4:	0800aab4 	.word	0x0800aab4
+ 80048a8:	0800aab8 	.word	0x0800aab8
 
 080048ac <memcpy>:
  80048ac:	b510      	push	{r4, lr}
@@ -11462,10 +11462,10 @@ bool at_parser_line(const char *line, urc_t *out){
  8004e7e:	e7f7      	b.n	8004e70 <_svfprintf_r+0x458>
  8004e80:	465e      	mov	r6, fp
  8004e82:	e7bc      	b.n	8004dfe <_svfprintf_r+0x3e6>
- 8004e84:	0800a76c 	.word	0x0800a76c
+ 8004e84:	0800a770 	.word	0x0800a770
  8004e88:	7fefffff 	.word	0x7fefffff
- 8004e8c:	0800a75c 	.word	0x0800a75c
- 8004e90:	0800a760 	.word	0x0800a760
+ 8004e8c:	0800a760 	.word	0x0800a760
+ 8004e90:	0800a764 	.word	0x0800a764
  8004e94:	9b07      	ldr	r3, [sp, #28]
  8004e96:	931f      	str	r3, [sp, #124]	; 0x7c
  8004e98:	9b1f      	ldr	r3, [sp, #124]	; 0x7c
@@ -11843,9 +11843,9 @@ bool at_parser_line(const char *line, urc_t *out){
  8005226:	4683      	mov	fp, r0
  8005228:	e5bf      	b.n	8004daa <_svfprintf_r+0x392>
  800522a:	bf00      	nop
- 800522c:	0800a790 	.word	0x0800a790
- 8005230:	0800a7a0 	.word	0x0800a7a0
- 8005234:	0800a77d 	.word	0x0800a77d
+ 800522c:	0800a794 	.word	0x0800a794
+ 8005230:	0800a7a4 	.word	0x0800a7a4
+ 8005234:	0800a781 	.word	0x0800a781
  8005238:	f045 0510 	orr.w	r5, r5, #16
  800523c:	06a9      	lsls	r1, r5, #26
  800523e:	d509      	bpl.n	8005254 <_svfprintf_r+0x83c>
@@ -12147,9 +12147,9 @@ bool at_parser_line(const char *line, urc_t *out){
  80054f8:	f040 81eb 	bne.w	80058d2 <_svfprintf_r+0xeba>
  80054fc:	ac2e      	add	r4, sp, #184	; 0xb8
  80054fe:	e7f3      	b.n	80054e8 <_svfprintf_r+0xad0>
- 8005500:	0800a77d 	.word	0x0800a77d
- 8005504:	0800a78e 	.word	0x0800a78e
- 8005508:	0800a7a0 	.word	0x0800a7a0
+ 8005500:	0800a781 	.word	0x0800a781
+ 8005504:	0800a792 	.word	0x0800a792
+ 8005508:	0800a7a4 	.word	0x0800a7a4
  800550c:	9b1b      	ldr	r3, [sp, #108]	; 0x6c
  800550e:	2b00      	cmp	r3, #0
  8005510:	dc7a      	bgt.n	8005608 <_svfprintf_r+0xbf0>
@@ -12430,8 +12430,8 @@ bool at_parser_line(const char *line, urc_t *out){
  800577a:	ac2e      	add	r4, sp, #184	; 0xb8
  800577c:	e7b4      	b.n	80056e8 <_svfprintf_r+0xcd0>
  800577e:	bf00      	nop
- 8005780:	0800a78e 	.word	0x0800a78e
- 8005784:	0800a7a0 	.word	0x0800a7a0
+ 8005780:	0800a792 	.word	0x0800a792
+ 8005784:	0800a7a4 	.word	0x0800a7a4
  8005788:	9b07      	ldr	r3, [sp, #28]
  800578a:	2b01      	cmp	r3, #1
  800578c:	dc01      	bgt.n	8005792 <_svfprintf_r+0xd7a>
@@ -12663,10 +12663,10 @@ bool at_parser_line(const char *line, urc_t *out){
  80059a0:	2700      	movs	r7, #0
  80059a2:	f7ff bace 	b.w	8004f42 <_svfprintf_r+0x52a>
  80059a6:	bf00      	nop
- 80059a8:	0800a7a0 	.word	0x0800a7a0
- 80059ac:	0800a790 	.word	0x0800a790
- 80059b0:	0800a764 	.word	0x0800a764
- 80059b4:	0800a768 	.word	0x0800a768
+ 80059a8:	0800a7a4 	.word	0x0800a7a4
+ 80059ac:	0800a794 	.word	0x0800a794
+ 80059b0:	0800a768 	.word	0x0800a768
+ 80059b4:	0800a76c 	.word	0x0800a76c
 
 080059b8 <__ssvfscanf_r>:
  80059b8:	e92d 4ff0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, lr}
@@ -13645,7 +13645,7 @@ bool at_parser_line(const char *line, urc_t *out){
  8006364:	4640      	mov	r0, r8
  8006366:	f002 fefb 	bl	8009160 <_sungetc_r>
  800636a:	e7f5      	b.n	8006358 <__ssvfscanf_r+0x9a0>
- 800636c:	0800a7b6 	.word	0x0800a7b6
+ 800636c:	0800a7ba 	.word	0x0800a7ba
  8006370:	08008ee5 	.word	0x08008ee5
  8006374:	f1a9 0903 	sub.w	r9, r9, #3
  8006378:	fa5f f989 	uxtb.w	r9, r9
@@ -13751,7 +13751,7 @@ bool at_parser_line(const char *line, urc_t *out){
  8006486:	e7f8      	b.n	800647a <__ssvfscanf_r+0xac2>
  8006488:	f04f 33ff 	mov.w	r3, #4294967295
  800648c:	f7ff bb92 	b.w	8005bb4 <__ssvfscanf_r+0x1fc>
- 8006490:	0800a7b0 	.word	0x0800a7b0
+ 8006490:	0800a7b4 	.word	0x0800a7b4
 
 08006494 <quorem>:
  8006494:	e92d 4ff7 	stmdb	sp!, {r0, r1, r2, r4, r5, r6, r7, r8, r9, sl, fp, lr}
@@ -14153,12 +14153,12 @@ bool at_parser_line(const char *line, urc_t *out){
  80068b0:	509f79fb 	.word	0x509f79fb
  80068b4:	3fd34413 	.word	0x3fd34413
  80068b8:	7ff00000 	.word	0x7ff00000
- 80068bc:	0800a7e1 	.word	0x0800a7e1
- 80068c0:	0800a7d8 	.word	0x0800a7d8
- 80068c4:	0800a78f 	.word	0x0800a78f
+ 80068bc:	0800a7e5 	.word	0x0800a7e5
+ 80068c0:	0800a7dc 	.word	0x0800a7dc
+ 80068c4:	0800a793 	.word	0x0800a793
  80068c8:	3ff80000 	.word	0x3ff80000
- 80068cc:	0800a818 	.word	0x0800a818
- 80068d0:	0800a7f0 	.word	0x0800a7f0
+ 80068cc:	0800a820 	.word	0x0800a820
+ 80068d0:	0800a7f8 	.word	0x0800a7f8
  80068d4:	2601      	movs	r6, #1
  80068d6:	2300      	movs	r3, #0
  80068d8:	9609      	str	r6, [sp, #36]	; 0x24
@@ -14420,8 +14420,8 @@ bool at_parser_line(const char *line, urc_t *out){
  8006bb4:	e9cd 0102 	strd	r0, r1, [sp, #8]
  8006bb8:	e7bd      	b.n	8006b36 <_dtoa_r+0x586>
  8006bba:	bf00      	nop
- 8006bbc:	0800a818 	.word	0x0800a818
- 8006bc0:	0800a7f0 	.word	0x0800a7f0
+ 8006bbc:	0800a820 	.word	0x0800a820
+ 8006bc0:	0800a7f8 	.word	0x0800a7f8
  8006bc4:	3ff00000 	.word	0x3ff00000
  8006bc8:	40240000 	.word	0x40240000
  8006bcc:	401c0000 	.word	0x401c0000
@@ -14990,8 +14990,8 @@ bool at_parser_line(const char *line, urc_t *out){
  8007148:	f77f af4b 	ble.w	8006fe2 <_dtoa_r+0xa32>
  800714c:	e714      	b.n	8006f78 <_dtoa_r+0x9c8>
  800714e:	bf00      	nop
- 8007150:	0800a78e 	.word	0x0800a78e
- 8007154:	0800a7d8 	.word	0x0800a7d8
+ 8007150:	0800a792 	.word	0x0800a792
+ 8007154:	0800a7dc 	.word	0x0800a7dc
 
 08007158 <iswspace>:
  8007158:	28ff      	cmp	r0, #255	; 0xff
@@ -15526,7 +15526,7 @@ bool at_parser_line(const char *line, urc_t *out){
  8007646:	bf00      	nop
  8007648:	20000028 	.word	0x20000028
  800764c:	2000011c 	.word	0x2000011c
- 8007650:	0800a7ee 	.word	0x0800a7ee
+ 8007650:	0800a7f2 	.word	0x0800a7f2
 
 08007654 <__ascii_mbtowc>:
  8007654:	b082      	sub	sp, #8
@@ -15991,7 +15991,7 @@ bool at_parser_line(const char *line, urc_t *out){
  8007a8c:	4638      	mov	r0, r7
  8007a8e:	e8bd 83f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, pc}
  8007a92:	bf00      	nop
- 8007a94:	0800a8e0 	.word	0x0800a8e0
+ 8007a94:	0800a8e8 	.word	0x0800a8e8
 
 08007a98 <__lshift>:
  8007a98:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
@@ -16799,9 +16799,9 @@ bool at_parser_line(const char *line, urc_t *out){
  800824e:	9705      	strle	r7, [sp, #20]
  8008250:	e7d1      	b.n	80081f6 <_strtod_l+0x2ae>
  8008252:	bf00      	nop
- 8008254:	0800a8ec 	.word	0x0800a8ec
- 8008258:	0800a761 	.word	0x0800a761
- 800825c:	0800a7db 	.word	0x0800a7db
+ 8008254:	0800a8f4 	.word	0x0800a8f4
+ 8008258:	0800a765 	.word	0x0800a765
+ 800825c:	0800a7df 	.word	0x0800a7df
  8008260:	7ff00000 	.word	0x7ff00000
  8008264:	2d10      	cmp	r5, #16
  8008266:	bfdf      	itttt	le
@@ -17046,10 +17046,10 @@ bool at_parser_line(const char *line, urc_t *out){
  80084e0:	f8c8 3000 	str.w	r3, [r8]
  80084e4:	e78a      	b.n	80083fc <_strtod_l+0x4b4>
  80084e6:	bf00      	nop
- 80084e8:	0800a769 	.word	0x0800a769
- 80084ec:	0800a900 	.word	0x0800a900
- 80084f0:	0800a818 	.word	0x0800a818
- 80084f4:	0800a7f0 	.word	0x0800a7f0
+ 80084e8:	0800a76d 	.word	0x0800a76d
+ 80084ec:	0800a908 	.word	0x0800a908
+ 80084f0:	0800a820 	.word	0x0800a820
+ 80084f4:	0800a7f8 	.word	0x0800a7f8
  80084f8:	7ca00000 	.word	0x7ca00000
  80084fc:	fff80000 	.word	0xfff80000
  8008500:	7ff00000 	.word	0x7ff00000
@@ -17316,7 +17316,7 @@ bool at_parser_line(const char *line, urc_t *out){
  8008792:	d181      	bne.n	8008698 <_strtod_l+0x750>
  8008794:	e62b      	b.n	80083ee <_strtod_l+0x4a6>
  8008796:	bf00      	nop
- 8008798:	0800a918 	.word	0x0800a918
+ 8008798:	0800a920 	.word	0x0800a920
  800879c:	fffffc02 	.word	0xfffffc02
  80087a0:	f040 8086 	bne.w	80088b0 <_strtod_l+0x968>
  80087a4:	9a08      	ldr	r2, [sp, #32]
