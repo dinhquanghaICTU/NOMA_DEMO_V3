@@ -38,6 +38,7 @@ typedef struct {
     bool        cpin_pending;
     uint32_t    cpin_start;
     uint32_t    cpin_last;
+    uint32_t    mqtt_connect_time;  // Thời gian MQTT connect xong
     
     bool sim_ok;                     
     
@@ -63,5 +64,7 @@ void app_init(void);
 void app_process(void);
 void app_reset_all(void);
 bool app_is_network_ready(void);
+void app_set_mqtt_connected(void);  
+bool app_is_cpin_pending(void);     
 
 #endif // __GSM_APP_H__

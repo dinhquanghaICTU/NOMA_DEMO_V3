@@ -75,7 +75,8 @@ bool gsm_nw_basic(){
         break;
 
     case 1:
-        if(gsm_send_data_queue_pop(line, sizeof(line))){
+        // Pop và skip URC spam khi đang chờ OK
+        while(gsm_send_data_queue_pop(line, sizeof(line))){
             log_raw_line(line);
             if(at_parser_line(line,&urc)){
                 if(urc.type == URC_OK){
@@ -86,7 +87,9 @@ bool gsm_nw_basic(){
                     gsm_nw_handle_error();
                     return false;
                 }
+                // Skip các URC không liên quan
             }
+            // Skip URC spam không parse được
         }
         if (is_timeout(gsm_nw_ctx.time_stamp,TIME_OUT)){
             send_debug("time out AT\r\n");
@@ -193,7 +196,8 @@ bool gsm_nw_basic(){
         break;
 
     case 7:
-        if(gsm_send_data_queue_pop(line, sizeof(line))){
+        // Pop và skip URC spam (+CGEV, *ATREADY, *ISIMAID, +CPIN: READY) khi đang chờ OK
+        while(gsm_send_data_queue_pop(line, sizeof(line))){
             log_raw_line(line);
             if(at_parser_line(line,&urc)){
                 if(urc.type == URC_OK){
@@ -201,12 +205,19 @@ bool gsm_nw_basic(){
                     return true;
                 }
                 else if(urc.type == URC_ERROR ){
-                    send_debug(">>> [sim error] error");
+                    send_debug(">>> [sim error] CSCS error\r\n");
                     gsm_nw_handle_error();
+                    return false;
                 }
+                // Skip các URC không liên quan (CPIN, CREG, etc.)
+                // Tiếp tục pop line tiếp theo
+            } else {
+                // Không parse được (URC spam như +CGEV, *ATREADY) → skip
+                // Tiếp tục pop line tiếp theo
             }
         }
-        if (is_timeout(gsm_nw_ctx.time_stamp,TIME_OUT)){
+        // Tăng timeout lên 15s để chờ response (module có thể chậm)
+        if (is_timeout(gsm_nw_ctx.time_stamp, 15000)){
            send_debug("time out CSCS\r\n");
             gsm_nw_handle_error();
             return false;

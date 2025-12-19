@@ -848,6 +848,11 @@ bool mqtt_phase_connect(void) {
                         gsm_mqtt_ctx.is_connected = 1;
                         gsm_mqtt_ctx.phase = MQTT_PHASE_IDLE;
                         gsm_mqtt_ctx.step = 0;
+                        
+      
+                        extern void app_set_mqtt_connected(void);
+                        app_set_mqtt_connected();
+                        
                         delete_line(line);
                         return false;
                     } else {
@@ -855,7 +860,7 @@ bool mqtt_phase_connect(void) {
                         snprintf(err_dbg, sizeof(err_dbg), ">>> MQTT CONNECT ERROR: code=%d\r\n", result);
                         send_debug(err_dbg);
                         
-                        // Lá»—i code 32 thÆ°á»�ng lÃ  SSL/TLS issue, thá»­ reset vÃ  retry
+                       
                         if (result == 32 && connect_retry < 2) {
                             connect_retry++;
                             send_debug(">>> MQTT CONNECT: SSL error, retry after reset...\r\n");
@@ -1189,10 +1194,14 @@ void gsm_mqtt_process(void) {
             }
             
             // Lắng nghe message từ queue - xử lý TẤT CẢ line, kể cả không phải URC
-            while (gsm_send_data_queue_pop(line, sizeof(line))) {
-                log_raw_line(line);
-                // Luôn gọi handle_urc để xử lý cả URC và data (topic/payload)
-                gsm_mqtt_handle_urc(line);
+            // KHÔNG pop queue nếu CPIN đang pending (để CPIN handler xử lý response trước)
+            extern bool app_is_cpin_pending(void);
+            if (!app_is_cpin_pending()) {
+                while (gsm_send_data_queue_pop(line, sizeof(line))) {
+                    log_raw_line(line);
+                    // Luôn gọi handle_urc để xử lý cả URC và data (topic/payload)
+                    gsm_mqtt_handle_urc(line);
+                }
             }
 
             // Đọc topic và payload từ UART nếu đang nhận message

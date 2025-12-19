@@ -1,7 +1,9 @@
-gsm_app.c:19:13:gsm_sim_check	4	static
-gsm_app.c:23:6:init_hardware	8	static
-gsm_app.c:40:6:app_reset_all	8	static
-gsm_app.c:52:6:app_init	8	static
-gsm_app.c:60:13:app_process_led_queue	160	static
-gsm_app.c:82:13:app_idle_polling	128	static
-gsm_app.c:144:6:app_process	8	static
+gsm_app.c:20:13:gsm_sim_check	4	static
+gsm_app.c:24:6:init_hardware	8	static
+gsm_app.c:41:6:app_reset_all	8	static
+gsm_app.c:53:6:app_init	8	static
+gsm_app.c:62:6:app_set_mqtt_connected	8	static
+gsm_app.c:67:6:app_is_cpin_pending	4	static
+gsm_app.c:71:13:app_process_led_queue	160	static
+gsm_app.c:93:13:app_idle_polling	128	static
+gsm_app.c:178:6:app_process	8	static

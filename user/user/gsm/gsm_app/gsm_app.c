@@ -1,5 +1,6 @@
 #include "gsm_app.h"
 #include <string.h>
+#include <stdio.h>
 #include "../gsm_sms/gsm_sms.h"
 #include "../gsm_mqtt/gsm_mqtt.h"
 #include "driver/W25Qx/w25qx.h"
@@ -54,7 +55,17 @@ void app_init(void){
     app_ctx.state = APP_BOOT;
     app_ctx.time_stamp = get_tick_ms();
     app_ctx.last_sim_check = get_tick_ms();
+    app_ctx.mqtt_connect_time = 0;
     app_ctx.sim_ok = true;
+}
+
+void app_set_mqtt_connected(void) {
+    app_ctx.mqtt_connect_time = get_tick_ms();
+    app_ctx.cpin_last = get_tick_ms(); 
+}
+
+bool app_is_cpin_pending(void) {
+    return app_ctx.cpin_pending;
 }
 
 static void app_process_led_queue(void) {
@@ -83,14 +94,20 @@ static void app_idle_polling(void) {
     char line[30];
     urc_t urc;
 
-    // Check CPIN định kỳ để phát hiện SIM bị rút (mỗi 30 giây)
-    // Kiểm tra SMS hoặc MQTT đang busy
     bool sms_busy = (gsm_sms_ctx.state == GSM_SMS_SEND || 
                      (gsm_sms_ctx.state == GSM_SMS_RECEIVE && gsm_sms_ctx.receive.step >= 2));
     bool mqtt_busy = (gsm_mqtt_ctx.phase != MQTT_PHASE_IDLE && gsm_mqtt_ctx.phase != MQTT_PHASE_STOP);
     
-    // Check CPIN định kỳ (mỗi 30 giây), chỉ khi không busy
-    if (!app_ctx.cpin_pending && !sms_busy && !mqtt_busy && is_timeout(app_ctx.cpin_last, 30000)) {
+    // Nếu MQTT vừa connect, đợi 10 giây để ổn định trước khi check CPIN
+    bool mqtt_just_connected = (gsm_mqtt_ctx.is_connected && 
+                                app_ctx.mqtt_connect_time > 0 &&
+                                (get_tick_ms() - app_ctx.mqtt_connect_time) < 10000);
+    
+    // Interval check CPIN: 60 giây nếu MQTT connected, 30 giây nếu không
+    uint32_t cpin_interval = gsm_mqtt_ctx.is_connected ? 60000 : 30000;
+    
+    if (!app_ctx.cpin_pending && !sms_busy && !mqtt_busy && !mqtt_just_connected && 
+        is_timeout(app_ctx.cpin_last, cpin_interval)) {
         send_debug(">>> [SIM] CPIN check\r\n");
         send_at("AT+CPIN?\r\n");
         app_ctx.cpin_pending = true;
@@ -99,26 +116,28 @@ static void app_idle_polling(void) {
     }
 
     if (app_ctx.cpin_pending) {
-        if (gsm_send_data_queue_pop(line, sizeof(line))) {
+        // Pop liên tục cho đến khi nhận được response
+        while (gsm_send_data_queue_pop(line, sizeof(line))) {
             log_raw_line(line);
             if (at_parser_line(line, &urc)) {
                 if (urc.type == URC_CPIN_READY) {
                     app_ctx.sim_ok = true;
                     app_ctx.cpin_pending = false;
                     send_debug(">>> [SIM] CPIN READY\r\n");
+                    break;
                 }
                 else if (urc.type == URC_OK) {
                     app_ctx.sim_ok = true;
                     app_ctx.cpin_pending = false;
                     send_debug(">>> [SIM] CPIN OK\r\n");
+                    break;
                 } else if (urc.type == URC_CPIN_PIN ||
                            urc.type == URC_CPIN_PUK ||
                            urc.type == URC_ERROR) {
                     send_debug(">>> [SIM] CPIN NOT READY - SIM may be removed!\r\n");
                     app_ctx.sim_ok = false;
                     app_ctx.cpin_pending = false;
-                    
-                    // Nếu MQTT đang connected, ngắt kết nối
+
                     if (gsm_mqtt_ctx.is_connected) {
                         send_debug(">>> [SIM] Disconnecting MQTT due to SIM issue\r\n");
                         gsm_mqtt_ctx.is_connected = false;
@@ -127,17 +146,16 @@ static void app_idle_polling(void) {
                     
                     app_ctx.state = APP_WAIT_NET;
                     app_reset_all();
+                    break;
                 }
             }
         }
 
-        // Timeout chờ trả lời CPIN (5s)
         if (is_timeout(app_ctx.cpin_start, 5000)) {
             send_debug(">>> [SIM] CPIN timeout - SIM may be removed!\r\n");
             app_ctx.cpin_pending = false;
             app_ctx.sim_ok = false;
             
-            // Nếu MQTT đang connected, ngắt kết nối
             if (gsm_mqtt_ctx.is_connected) {
                 send_debug(">>> [SIM] Disconnecting MQTT due to SIM timeout\r\n");
                 gsm_mqtt_ctx.is_connected = false;
@@ -149,7 +167,6 @@ static void app_idle_polling(void) {
         }
     }
 
-    // Chỉ gọi SMS receive nếu không đang send và MQTT không busy (phase khác IDLE/STOP)
     {
         bool mqtt_busy = (gsm_mqtt_ctx.phase != MQTT_PHASE_IDLE && gsm_mqtt_ctx.phase != MQTT_PHASE_STOP);
         if (gsm_sms_ctx.state != GSM_SMS_SEND && !mqtt_busy) {
@@ -174,7 +191,7 @@ void app_process(void){
         break;
 
     case APP_IDLE:
-        // Polling (CPIN check, SMS receive)
+        
         app_idle_polling();
        
 //        if (!test_sms_sent && gsm_sms_ctx.state == GSM_SMS_IDLE && gsm_sms_ctx.target_valid) {
@@ -182,14 +199,13 @@ void app_process(void){
 //            test_sms_sent = true;
 //        }
         
-        // Process LED queue (xử lý commands từ MQTT)
+
         app_process_led_queue();
         
-        // Process SMS (ưu tiên cao hơn)
+
         gsm_sms_process();
         
-        // Process MQTT (ưu tiên thấp hơn SMS)
-        // Chỉ chạy MQTT khi SMS không busy
+  
         if (gsm_sms_ctx.state != GSM_SMS_SEND && 
             gsm_sms_ctx.state != GSM_SMS_RECEIVE) {
             gsm_mqtt_process();
