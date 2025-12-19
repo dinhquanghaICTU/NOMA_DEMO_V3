@@ -4,6 +4,8 @@
 #include "../urc/urc.h"
 #include "driver/W25Qx/w25qx.h"
 #include "driver/led/led.h"
+#include "driver/led/led_queue.h"
+#include "third_paty/jsmn/jsmn.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -52,6 +54,10 @@ void gsm_sms_init(void){
     gsm_sms_ctx.timeout_ms  = TIME_OUT;
     gsm_sms_ctx.retry_count = 0;
 
+    // Xóa sạch toàn bộ SMS trong SIM khi khởi động (tránh đầy bộ nhớ)
+    send_debug(">>> [SMS] clear all message at init\r\n");
+    send_at("AT+CMGD=1,4\r\n");
+
     
     uint8_t buf[SMS_TARGET_SIZE];
     w25qxx_read(SMS_TARGET_ADDR, buf, SMS_TARGET_SIZE);
@@ -95,23 +101,10 @@ static void gsm_sms_reset_flow(void){
 
 static void gsm_sms_handle_error(void)
 {
-    gsm_sms_ctx.retry_count++;
-    if (gsm_sms_ctx.retry_count < 3) {
-        send_debug(">>> [SMS] Retry ");
-        char buf[8];
-        snprintf(buf, sizeof(buf), "%d", gsm_sms_ctx.retry_count);
-        send_debug(buf);
-        send_debug("/3\r\n");
-
-        gsm_sms_ctx.state      = GSM_SMS_IDLE;
-        gsm_sms_reset_flow();
-        gsm_sms_ctx.time_stamp = get_tick_ms();
-    } else {
-        send_debug(">>> [SMS] Retry 3 times failed\r\n");
-        gsm_sms_ctx.state       = GSM_SMS_ERROR;
-        gsm_sms_reset_flow();
-        gsm_sms_ctx.retry_count = 0;
-    }
+    // Bỏ retry - reset luôn về IDLE
+    gsm_sms_ctx.state = GSM_SMS_IDLE;
+    gsm_sms_reset_flow();
+    gsm_sms_ctx.retry_count = 0;
 }
 
 
@@ -183,7 +176,8 @@ bool gsm_sms_phase_send(void){
                     if (at_parser_line(line, &sms_urc)) {
                         if (sms_urc.type == URC_CMS_ERROR ||
                             sms_urc.type == URC_ERROR) {
-                            gsm_sms_handle_error();
+                            gsm_sms_ctx.state = GSM_SMS_IDLE;
+                            gsm_sms_reset_flow();
                             return false;
                         }
                     }
@@ -260,33 +254,245 @@ bool gsm_sms_reciv (void){
         break;
     }
     case 3:
-        if (gsm_send_data_queue_pop(line, sizeof(line))) {
+        // Pop liên tục cho đến khi nhận đủ +CMGR, SMS text và OK
+        while (gsm_send_data_queue_pop(line, sizeof(line))) {
             log_raw_line(line);
+            
+            char dbg_line[256];
+            snprintf(dbg_line, sizeof(dbg_line), ">>> [SMS] case3: line='%s', len=%u\r\n", line, strlen(line));
+            send_debug(dbg_line);
+            
             if (at_parser_line(line, &sms_urc)) {
+                char dbg_urc[128];
+                snprintf(dbg_urc, sizeof(dbg_urc), ">>> [SMS] URC type=%d, text='%s'\r\n", sms_urc.type, sms_urc.text);
+                send_debug(dbg_urc);
                 
                 if (sms_urc.type == URC_CMGR) {
                     strncpy(gsm_sms_ctx.receive.phone, sms_urc.text,
                             sizeof(gsm_sms_ctx.receive.phone) - 1);
                     gsm_sms_ctx.receive.phone[sizeof(gsm_sms_ctx.receive.phone) - 1] = '\0';
+                    send_debug(">>> [SMS] CMGR: phone saved\r\n");
+                    continue; // Tiếp tục pop line tiếp theo
                 }
                 
                 else if (sms_urc.type == URC_SMS_TEXT) {
+                    send_debug(">>> [SMS] SMS_TEXT received\r\n");
+                    send_debug(">>> [SMS] SMS_TEXT received\r\n");
                     strncpy(gsm_sms_ctx.receive.text, sms_urc.text,
                             sizeof(gsm_sms_ctx.receive.text) - 1);
                     gsm_sms_ctx.receive.text[sizeof(gsm_sms_ctx.receive.text) - 1] = '\0';
 
-                
+                    char dbg[256];
+                    snprintf(dbg, sizeof(dbg), ">>> [SMS] text='%s', phone='%s', target='%s'\r\n", 
+                             gsm_sms_ctx.receive.text, gsm_sms_ctx.receive.phone, gsm_sms_ctx.target_phone);
+                    send_debug(dbg);
+
                     if (strcmp(gsm_sms_ctx.receive.phone, gsm_sms_ctx.target_phone) == 0) {
-                        if (strcmp(gsm_sms_ctx.receive.text, "0") == 0) {
-                            led_set_state(0);
-                            led_state_save(0);
-                            gsm_sms_send(NULL, "LED OFF\r\n");
-                        } else if (strcmp(gsm_sms_ctx.receive.text, "1") == 0) {
-                            led_set_state(1);
-                            led_state_save(1);
-                            gsm_sms_send(NULL, "LED ON\r\n");
+                        char cmd[16];
+                        bool got_cmd = false;
+                        const char *cmd_src = gsm_sms_ctx.receive.text;
+
+                        const char *p = gsm_sms_ctx.receive.text;
+                        while (*p == ' ' || *p == '\r' || *p == '\n' || *p == '\t') p++;
+
+                        if (*p == '{') {
+                            jsmn_parser parser;
+                            jsmntok_t tokens[16];
+                            jsmn_init(&parser);
+                            int r = jsmn_parse(&parser, p, strlen(p), tokens, sizeof(tokens)/sizeof(tokens[0]));
+                            if (r >= 0) {
+                                for (int i = 1; i < r; i++) {
+                                    if (tokens[i].type == JSMN_STRING) {
+                                        int klen = tokens[i].end - tokens[i].start;
+                                        if (klen == 7 && strncmp(p + tokens[i].start, "message", 7) == 0 && (i + 1) < r) {
+                                            jsmntok_t *val = &tokens[i + 1];
+                                            int vlen = val->end - val->start;
+                                            if (vlen > 0 && vlen < sizeof(cmd)) {
+                                                memcpy(cmd, p + val->start, vlen);
+                                                cmd[vlen] = '\0';
+                                                cmd_src = cmd;
+                                                got_cmd = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!got_cmd) {
+                            size_t i = 0, j = strlen(gsm_sms_ctx.receive.text);
+                            while (i < j && (gsm_sms_ctx.receive.text[i] == ' ' || gsm_sms_ctx.receive.text[i] == '\r' || 
+                                   gsm_sms_ctx.receive.text[i] == '\n' || gsm_sms_ctx.receive.text[i] == '\t' || 
+                                   gsm_sms_ctx.receive.text[i] == '\"')) i++;
+                            while (j > i && (gsm_sms_ctx.receive.text[j-1] == ' ' || gsm_sms_ctx.receive.text[j-1] == '\r' || 
+                                   gsm_sms_ctx.receive.text[j-1] == '\n' || gsm_sms_ctx.receive.text[j-1] == '\t' || 
+                                   gsm_sms_ctx.receive.text[j-1] == '\"')) j--;
+                            size_t plen = (j > i) ? (j - i) : 0;
+                            if (plen > 0 && plen < sizeof(cmd)) {
+                                memcpy(cmd, &gsm_sms_ctx.receive.text[i], plen);
+                                cmd[plen] = '\0';
+                                cmd_src = cmd;
+                            }
+                        }
+
+                        snprintf(dbg, sizeof(dbg), ">>> [SMS] parsed cmd_src='%s'\r\n", cmd_src);
+                        send_debug(dbg);
+
+                        led_queue_cmd_t queue_cmd = LED_QUEUE_CMD_NONE;
+                        
+                        if (strcmp(cmd_src, "0") == 0 || strcmp(cmd_src, "off") == 0 || strcmp(cmd_src, "OFF") == 0) {
+                            queue_cmd = LED_QUEUE_CMD_OFF;
+                        } else if (strcmp(cmd_src, "1") == 0 || strcmp(cmd_src, "on") == 0 || strcmp(cmd_src, "ON") == 0) {
+                            queue_cmd = LED_QUEUE_CMD_ON;
+                        }
+                        
+                        snprintf(dbg, sizeof(dbg), ">>> [SMS] queue_cmd=%d\r\n", queue_cmd);
+                        send_debug(dbg);
+                        
+                        if (queue_cmd != LED_QUEUE_CMD_NONE) {
+                            if (led_queue_push(queue_cmd)) {
+                                snprintf(dbg, sizeof(dbg), ">>> [SMS] pushed to LED queue: %d\r\n", queue_cmd);
+                                send_debug(dbg);
+                                
+                                // Gửi SMS response ngay
+                                if (queue_cmd == LED_QUEUE_CMD_ON) {
+                                    gsm_sms_send(gsm_sms_ctx.receive.phone, "LED ON");
+                                } else if (queue_cmd == LED_QUEUE_CMD_OFF) {
+                                    gsm_sms_send(gsm_sms_ctx.receive.phone, "LED OFF");
+                                }
+                            } else {
+                                send_debug(">>> [SMS] LED queue full!\r\n");
+                            }
                         } else {
-                            gsm_sms_send(NULL, "CMD ERR\r\n");
+                            snprintf(dbg, sizeof(dbg), ">>> [SMS] invalid command: '%s'\r\n", cmd_src);
+                            send_debug(dbg);
+                        }
+                    } else {
+                        send_debug(">>> [SMS] ignore non-target sender\r\n");
+                    }
+
+                    // Xóa SMS và reset luôn, không retry
+                    gsm_sms_ctx.receive.step = 4;
+                    gsm_sms_ctx.time_stamp   = get_tick_ms();
+                    return true; // Đã xử lý xong, return để chuyển sang step 4
+                }
+                else if (sms_urc.type == URC_OK) {
+                    // Nhận được OK sau khi đã xử lý SMS text
+                    send_debug(">>> [SMS] OK received after text\r\n");
+                    // Nếu chưa xử lý text thì chuyển sang step 4 để xóa
+                    if (gsm_sms_ctx.receive.step == 3) {
+                        gsm_sms_ctx.receive.step = 4;
+                        gsm_sms_ctx.time_stamp = get_tick_ms();
+                        return true;
+                    }
+                    continue;
+                }
+                else if (sms_urc.type == URC_ERROR || sms_urc.type == URC_CMS_ERROR) {
+                    gsm_sms_ctx.receive.step = 0;
+                    gsm_sms_ctx.state = GSM_SMS_IDLE;
+                    return false;
+                }
+                continue; // Tiếp tục pop line tiếp theo
+            } else {
+                // Không phải URC - có thể là SMS text chưa được parse
+                char dbg_not_urc[128];
+                snprintf(dbg_not_urc, sizeof(dbg_not_urc), ">>> [SMS] case3: not URC, line='%s'\r\n", line);
+                send_debug(dbg_not_urc);
+                
+                // Thử parse như SMS text nếu đang đợi text và line không phải OK/ERROR
+                if (strlen(line) > 0 && line[0] != 'O' && line[0] != 'E' && line[0] != '+' && line[0] != 'A') {
+                    // Có thể là SMS text - thử xử lý như SMS_TEXT
+                    strncpy(gsm_sms_ctx.receive.text, line,
+                            sizeof(gsm_sms_ctx.receive.text) - 1);
+                    gsm_sms_ctx.receive.text[sizeof(gsm_sms_ctx.receive.text) - 1] = '\0';
+                    
+                    send_debug(">>> [SMS] treating as SMS_TEXT (not parsed as URC)\r\n");
+                    
+                    char dbg[256];
+                    snprintf(dbg, sizeof(dbg), ">>> [SMS] text='%s', phone='%s', target='%s'\r\n", 
+                             gsm_sms_ctx.receive.text, gsm_sms_ctx.receive.phone, gsm_sms_ctx.target_phone);
+                    send_debug(dbg);
+
+                    if (strcmp(gsm_sms_ctx.receive.phone, gsm_sms_ctx.target_phone) == 0) {
+                        char cmd[16];
+                        bool got_cmd = false;
+                        const char *cmd_src = gsm_sms_ctx.receive.text;
+
+                        const char *p = gsm_sms_ctx.receive.text;
+                        while (*p == ' ' || *p == '\r' || *p == '\n' || *p == '\t') p++;
+
+                        if (*p == '{') {
+                            jsmn_parser parser;
+                            jsmntok_t tokens[16];
+                            jsmn_init(&parser);
+                            int r = jsmn_parse(&parser, p, strlen(p), tokens, sizeof(tokens)/sizeof(tokens[0]));
+                            if (r >= 0) {
+                                for (int i = 1; i < r; i++) {
+                                    if (tokens[i].type == JSMN_STRING) {
+                                        int klen = tokens[i].end - tokens[i].start;
+                                        if (klen == 7 && strncmp(p + tokens[i].start, "message", 7) == 0 && (i + 1) < r) {
+                                            jsmntok_t *val = &tokens[i + 1];
+                                            int vlen = val->end - val->start;
+                                            if (vlen > 0 && vlen < sizeof(cmd)) {
+                                                memcpy(cmd, p + val->start, vlen);
+                                                cmd[vlen] = '\0';
+                                                cmd_src = cmd;
+                                                got_cmd = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!got_cmd) {
+                            size_t i = 0, j = strlen(gsm_sms_ctx.receive.text);
+                            while (i < j && (gsm_sms_ctx.receive.text[i] == ' ' || gsm_sms_ctx.receive.text[i] == '\r' || 
+                                   gsm_sms_ctx.receive.text[i] == '\n' || gsm_sms_ctx.receive.text[i] == '\t' || 
+                                   gsm_sms_ctx.receive.text[i] == '\"')) i++;
+                            while (j > i && (gsm_sms_ctx.receive.text[j-1] == ' ' || gsm_sms_ctx.receive.text[j-1] == '\r' || 
+                                   gsm_sms_ctx.receive.text[j-1] == '\n' || gsm_sms_ctx.receive.text[j-1] == '\t' || 
+                                   gsm_sms_ctx.receive.text[j-1] == '\"')) j--;
+                            size_t plen = (j > i) ? (j - i) : 0;
+                            if (plen > 0 && plen < sizeof(cmd)) {
+                                memcpy(cmd, &gsm_sms_ctx.receive.text[i], plen);
+                                cmd[plen] = '\0';
+                                cmd_src = cmd;
+                            }
+                        }
+
+                        snprintf(dbg, sizeof(dbg), ">>> [SMS] parsed cmd_src='%s'\r\n", cmd_src);
+                        send_debug(dbg);
+
+                        led_queue_cmd_t queue_cmd = LED_QUEUE_CMD_NONE;
+                        
+                        if (strcmp(cmd_src, "0") == 0 || strcmp(cmd_src, "off") == 0 || strcmp(cmd_src, "OFF") == 0) {
+                            queue_cmd = LED_QUEUE_CMD_OFF;
+                        } else if (strcmp(cmd_src, "1") == 0 || strcmp(cmd_src, "on") == 0 || strcmp(cmd_src, "ON") == 0) {
+                            queue_cmd = LED_QUEUE_CMD_ON;
+                        }
+                        
+                        snprintf(dbg, sizeof(dbg), ">>> [SMS] queue_cmd=%d\r\n", queue_cmd);
+                        send_debug(dbg);
+                        
+                        if (queue_cmd != LED_QUEUE_CMD_NONE) {
+                            if (led_queue_push(queue_cmd)) {
+                                snprintf(dbg, sizeof(dbg), ">>> [SMS] pushed to LED queue: %d\r\n", queue_cmd);
+                                send_debug(dbg);
+                                
+                                if (queue_cmd == LED_QUEUE_CMD_ON) {
+                                    gsm_sms_send(gsm_sms_ctx.receive.phone, "LED ON");
+                                } else if (queue_cmd == LED_QUEUE_CMD_OFF) {
+                                    gsm_sms_send(gsm_sms_ctx.receive.phone, "LED OFF");
+                                }
+                            } else {
+                                send_debug(">>> [SMS] LED queue full!\r\n");
+                            }
+                        } else {
+                            snprintf(dbg, sizeof(dbg), ">>> [SMS] invalid command: '%s'\r\n", cmd_src);
+                            send_debug(dbg);
                         }
                     } else {
                         send_debug(">>> [SMS] ignore non-target sender\r\n");
@@ -294,19 +500,17 @@ bool gsm_sms_reciv (void){
 
                     gsm_sms_ctx.receive.step = 4;
                     gsm_sms_ctx.time_stamp   = get_tick_ms();
-                    return true;
-                }
-                else if (sms_urc.type == URC_ERROR || sms_urc.type == URC_CMS_ERROR) {
-                    gsm_sms_handle_error();
-                    return false;
+                    return true; // Đã xử lý xong, return để chuyển sang step 4
                 }
             }
         }
-        if (is_timeout(gsm_sms_ctx.time_stamp, 1000)) {
-        	send_debug("time out get message\r\n");
-            gsm_sms_handle_error();
+        // Nếu không còn line trong queue, kiểm tra timeout
+        if (is_timeout(gsm_sms_ctx.time_stamp, 5000)) {
+            gsm_sms_ctx.receive.step = 0;
+            gsm_sms_ctx.state = GSM_SMS_IDLE;
             return false;
         }
+        return true; // Tiếp tục đợi line tiếp theo
         
         break;
     case 4: { 

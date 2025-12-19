@@ -436,6 +436,7 @@ bool gsm_nw_reset_sim(void) {
     case 0:
         send_debug(">>> Reset SIM: AT+CFUN=1,1\r\n");
         send_at("AT+CFUN=1,1\r\n");
+        
         gsm_nw_ctx.time_stamp = get_tick_ms();
         gsm_nw_ctx.lte.step = 1;
         break;
@@ -446,8 +447,10 @@ bool gsm_nw_reset_sim(void) {
             if (at_parser_line(line, &urc)) {
                 if (urc.type == URC_OK) {
                     send_debug(">>> SIM reset OK, restart init\r\n");
+                    delay_ms(5000);
                     gsm_nw_ctx.lte.step = 0;
                     gsm_nw_ctx.state = GSM_NW_BASIC;
+
                     gsm_nw_ctx.basic.step = 0;
                     gsm_nw_ctx.retry_count = 0;
                     return true;

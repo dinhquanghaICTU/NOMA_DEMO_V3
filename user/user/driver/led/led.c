@@ -1,5 +1,6 @@
 #include "led.h"
 #include "../w25Qx/w25Qx.h"
+#include <string.h>
 
 static uint8_t current_led_state = 0;
 
@@ -58,4 +59,30 @@ void led_set_state(uint8_t state) {
         turn_off_led();
     }
     current_led_state = state;
+}
+
+// Áp dụng lệnh chuỗi "0"/"1" cho LED và lưu state xuống flash
+led_cmd_result_t led_apply_command(const char *cmd) {
+    if (!cmd) return LED_CMD_INVALID;
+
+    // Bỏ khoảng trắng đầu/cuối
+    const char *p = cmd;
+    while (*p == ' ' || *p == '\r' || *p == '\n' || *p == '\t' || *p == '\"') p++;
+    const char *q = cmd + strlen(cmd);
+    while (q > p && (q[-1] == ' ' || q[-1] == '\r' || q[-1] == '\n' || q[-1] == '\t' || q[-1] == '\"')) q--;
+
+    size_t len = (q > p) ? (size_t)(q - p) : 0;
+    if (len != 1) return LED_CMD_INVALID;
+
+    char c = p[0];
+    if (c == '0') {
+        led_set_state(0);
+        led_state_save(0);
+        return LED_CMD_OFF;
+    } else if (c == '1') {
+        led_set_state(1);
+        led_state_save(1);
+        return LED_CMD_ON;
+    }
+    return LED_CMD_INVALID;
 }

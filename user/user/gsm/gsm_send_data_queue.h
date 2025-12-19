@@ -10,8 +10,8 @@
 /*
     struct
 */
-#define GSM_URC_QUEUE_SIZE 10 //number of line queue
-#define GSM_URC_LINE_MAX_LEN 128 //number of len in of line
+#define GSM_URC_QUEUE_SIZE 10 
+#define GSM_URC_LINE_MAX_LEN 128 
 
 typedef struct {
     char lines[GSM_URC_QUEUE_SIZE][GSM_URC_LINE_MAX_LEN];
@@ -25,5 +25,6 @@ void gsm_send_data_queue_init(void);
 bool gsm_send_data_queue_pop(char *line, uint16_t max_len);
 void gsm_send_data_queue_proces(void);
 bool gsm_get_line_queue(char *line, uint16_t max_len);
+void delete_line(char *line);
 
 #endif //__GSM_SEND_DATA_QUEUE_H__

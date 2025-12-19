@@ -177,5 +177,97 @@ bool at_parser_line(const char *line, urc_t *out){
         }
     }
 
+
+    if (n >= 11 && strncmp(line, "+CME ERROR:", 11) == 0) {
+        int code = -1;
+        const char *p = line + 11;
+        if (sscanf(p, " %d", &code) == 1) {
+            out->type = URC_CME_ERROR;
+            out->v1   = (uint32_t)code;
+            return true;
+        }
+    }
+
+    // +CMQTTCONNECT: <client_idx>,<result>
+    if (n >= 14 && strncmp(line, "+CMQTTCONNECT:", 14) == 0) {
+        int client_idx = -1, result = -1;
+        const char *p = line + 14;
+        if (sscanf(p, " %d,%d", &client_idx, &result) == 2) {
+            out->type = URC_CMQTTCONNECT;
+            out->v1 = client_idx;
+            out->v2 = result;
+            return true;
+        }
+    }
+
+    // +CMQTTSUB: <client_idx>,<result>
+    if (n >= 10 && strncmp(line, "+CMQTTSUB:", 10) == 0) {
+        int client_idx = -1, result = -1;
+        const char *p = line + 10;
+        if (sscanf(p, " %d,%d", &client_idx, &result) == 2) {
+            out->type = URC_CMQTTSUB;
+            out->v1 = client_idx;
+            out->v2 = result;
+            return true;
+        }
+    }
+
+    // +CMQTTRXSTART: <client_idx>,<topic_len>,<payload_len>
+    if (n >= 14 && strncmp(line, "+CMQTTRXSTART:", 14) == 0) {
+        int client_idx = -1, topic_len = -1, payload_len = -1;
+        const char *p = line + 14;
+        if (sscanf(p, " %d,%d,%d", &client_idx, &topic_len, &payload_len) == 3) {
+            out->type = URC_CMQTTRXSTART;
+            out->v1 = client_idx;
+            out->v2 = topic_len;
+            out->v3 = payload_len;
+            return true;
+        }
+    }
+
+    // +CMQTTRXTOPIC: <client_idx>,<topic_len>
+    if (n >= 14 && strncmp(line, "+CMQTTRXTOPIC:", 14) == 0) {
+        int client_idx = -1, topic_len = -1;
+        const char *p = line + 14;
+        if (sscanf(p, " %d,%d", &client_idx, &topic_len) == 2) {
+            out->type = URC_CMQTTRXTOPIC;
+            out->v1 = client_idx;
+            out->v2 = topic_len;
+            return true;
+        }
+    }
+
+    // +CMQTTRXPAYLOAD: <client_idx>,<payload_len>
+    if (n >= 16 && strncmp(line, "+CMQTTRXPAYLOAD:", 16) == 0) {
+        int client_idx = -1, payload_len = -1;
+        const char *p = line + 16;
+        if (sscanf(p, " %d,%d", &client_idx, &payload_len) == 2) {
+            out->type = URC_CMQTTRXPAYLOAD;
+            out->v1 = client_idx;
+            out->v2 = payload_len;
+            return true;
+        }
+    }
+
+    // +CMQTTRXEND: <client_idx> hoặc +CMQTTRXEND: <client_idx>,<result>
+    if (n >= 12 && strncmp(line, "+CMQTTRXEND:", 12) == 0) {
+        int client_idx = -1, result = 0;
+        const char *p = line + 12;
+        // Thử parse với 2 số trước
+        if (sscanf(p, " %d,%d", &client_idx, &result) == 2) {
+            out->type = URC_CMQTTRXEND;
+            out->v1 = client_idx;
+            out->v2 = result;
+            return true;
+        }
+        // Nếu không được, thử parse với 1 số
+        else if (sscanf(p, " %d", &client_idx) == 1) {
+            out->type = URC_CMQTTRXEND;
+            out->v1 = client_idx;
+            out->v2 = 0; // result = 0 (success)
+            return true;
+        }
+    }
+
     return false;
 }

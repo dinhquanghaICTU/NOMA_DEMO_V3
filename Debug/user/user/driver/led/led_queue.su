@@ -1,0 +1,5 @@
+led_queue.c:13:6:led_queue_init	8	static
+led_queue.c:17:6:led_queue_push	16	static
+led_queue.c:29:6:led_queue_pop	16	static
+led_queue.c:41:6:led_queue_is_empty	4	static
+led_queue.c:45:9:led_queue_count	4	static

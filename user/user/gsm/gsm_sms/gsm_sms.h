@@ -56,4 +56,5 @@ bool gsm_sms_has_new(void);
 bool gsm_sms_set_target(const char *phone);
 const char* gsm_sms_get_target(void);
 bool gsm_sms_phase_send(void);
+bool gsm_sms_reciv(void);
 #endif //__GSM_SMS_H__

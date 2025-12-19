@@ -4,4 +4,4 @@ gsm_nw.c:57:13:apn_from_mcc_mnc	24	static
 gsm_nw.c:66:6:gsm_nw_basic	64	static
 gsm_nw.c:321:6:gsm_nw_lte	128	static
 gsm_nw.c:432:6:gsm_nw_reset_sim	64	static
-gsm_nw.c:477:6:gsm_nw_process	8	static
+gsm_nw.c:480:6:gsm_nw_process	8	static

@@ -28,6 +28,16 @@ typedef enum {
     URC_SMS_TEXT,
     URC_CMGR,
 
+    URC_CME_ERROR,
+
+    // MQTT URCs
+    URC_CMQTTCONNECT,      // +CMQTTCONNECT: <client_idx>,<result>
+    URC_CMQTTSUB,          // +CMQTTSUB: <client_idx>,<result>
+    URC_CMQTTRXSTART,      // +CMQTTRXSTART: <client_idx>,<topic_len>,<payload_len>
+    URC_CMQTTRXTOPIC,      // +CMQTTRXTOPIC: <client_idx>,<topic_len>
+    URC_CMQTTRXPAYLOAD,    // +CMQTTRXPAYLOAD: <client_idx>,<payload_len>
+    URC_CMQTTRXEND,        // Kết thúc nhận MQTT message
+
     URC_UNKNOWN,
 } urc_type_t;
 

@@ -1,6 +1,7 @@
-gsm_app.c:15:13:gsm_sim_check	4	static
-gsm_app.c:19:6:init_hardware	8	static
-gsm_app.c:31:6:app_reset_all	8	static
-gsm_app.c:41:6:app_init	8	static
-gsm_app.c:49:13:app_idle_polling	120	static
-gsm_app.c:102:6:app_process	8	static
+gsm_app.c:19:13:gsm_sim_check	4	static
+gsm_app.c:23:6:init_hardware	8	static
+gsm_app.c:40:6:app_reset_all	8	static
+gsm_app.c:52:6:app_init	8	static
+gsm_app.c:60:13:app_process_led_queue	160	static
+gsm_app.c:82:13:app_idle_polling	128	static
+gsm_app.c:144:6:app_process	8	static
